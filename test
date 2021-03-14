@@ -1,0 +1,238 @@
+import tkinter as tk
+from tkinter import messagebox
+import math
+
+def add_digit(digit):
+	value=calc.get()
+	if value[0]=='0' and len(value)==1:
+		value=value[1:]
+	calc['state']=tk.NORMAL
+	calc.delete(0, tk.END)
+	calc.insert(0, value+digit)
+	calc['state']=tk.DISABLED
+
+def add_operation(operation):
+	value=calc.get()
+	if value[-1] in '-+/*':
+		value=value[:-1]
+	elif '-' in value or '+' in value or '/' in value or '*' in value:
+		calculate()
+		value=calc.get()
+	calc['state']=tk.NORMAL
+	calc.delete(0, tk.END)
+	calc.insert(0, value+operation)
+	calc['state']=tk.DISABLED
+	global flag
+	flag = False
+
+def calculate():
+	value=calc.get()
+	if value[-1] in '-+/*':
+		value=value+value[:-1]
+	calc['state']=tk.NORMAL
+	calc.delete(0, tk.END)
+	try:
+		#calc.insert(0, eval(value))
+		calc.insert(0, round(eval(value), 6))
+	except (NameError, SyntaxError, ZeroDivisionError):
+		messagebox.showinfo('Внимание!', 'Ошибка!')
+		calc.insert(0, 0)
+	calc['state']=tk.DISABLED
+
+def clear():
+	calc['state']=tk.NORMAL
+	calc.delete(0, tk.END)
+	global flag
+	flag=False
+	calc.insert(0, 0)
+	calc['state']=tk.DISABLED
+
+def clear_symbol():
+	value=calc.get()
+	calc['state']=tk.NORMAL
+	if len(value) == 1:
+		calc.delete(0, tk.END)
+		calc.insert(0, 0)
+	else :
+		if(value[-1]=='.'):
+			global flag
+			flag=False
+		value=value[:-1]
+		calc.delete(0, tk.END)
+		calc.insert(0, value)
+	calc['state']=tk.DISABLED
+
+flag=False
+
+def dot():
+	value=calc.get()
+	calc['state']=tk.NORMAL
+	global flag
+	if not flag and value[-1].isdigit():
+		calc.delete(0, tk.END)
+		calc.insert(0, value+'.')
+		flag=True
+	calc['state']=tk.DISABLED
+
+def negative():
+	calc['state']=tk.NORMAL
+	value=calc.get()
+	if  '-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]:
+		value=calc.get()
+	elif '-' in value[-1] or '+' in value[-1] or '/' in value[-1] or '*' in value[-1]:
+		value=calc.get()
+	else:					
+		calc.delete(0, tk.END)	
+		if value[0]=='-':
+			calc.insert(0, value[1:])
+		else:
+			calc.insert(0, '-'+value)
+	calc['state']=tk.DISABLED
+
+def sqrt_f():
+	calc['state']=tk.NORMAL	
+	value=calc.get()
+	if value[0] != '-':
+		if (not(value[-1] in '-+/*')) and (not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:])):
+			#print('a')
+			value=math.sqrt(float(value))
+			calc.delete(0, tk.END)
+			calc.insert(0, value)
+	calc['state']=tk.DISABLED
+
+storage=0
+
+def save():
+	calc['state']=tk.NORMAL
+	value=calc.get()
+	if not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]):
+		#value=calc.get()
+		global storage
+		storage=value
+	calc['state']=tk.DISABLED
+
+def read():
+	calc['state']=tk.NORMAL
+	calc.delete(0, tk.END)
+	global storage
+	calc.insert(0, storage)
+	calc['state']=tk.DISABLED
+
+def sum_f():
+	calc['state']=tk.NORMAL	
+	value=calc.get()
+	if not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]):
+		#value=calc.get()
+		global storage
+		storage=float(storage)+float(value)
+	calc['state']=tk.DISABLED
+
+def sub_f():
+	calc['state']=tk.NORMAL	
+	value=calc.get()
+	if not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]):
+		#value=calc.get()
+		global storage
+		storage=float(storage)-float(value)
+	calc['state']=tk.DISABLED
+
+def make_digit_button(digit):
+	return tk.Button(text=digit, font=('Arial', 13), command=lambda : add_digit(digit))
+
+def make_operation_button(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=lambda : add_operation(operation))
+
+def make_calc_button(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=calculate)
+
+def make_clear_button(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=clear)
+
+def make_clear_symbol_button(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=clear_symbol)
+
+def make_dot_button(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=dot)
+
+def make_negative(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=negative)
+
+def make_sqrt(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=sqrt_f)
+
+def make_save(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=save)
+
+def make_read(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=read)
+
+def make_sum(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=sum_f)
+
+def make_sub(operation):
+	return tk.Button(text=operation, font=('Arial', 13), command=sub_f)
+
+def press_key(event):
+	if event.char.isdigit():
+		add_digit(event.char)
+	elif event.char in '-+/*':
+		add_operation(event.char)
+	elif event.char == '\r':
+		calculate()
+	elif event.char == '\b':
+		clear_symbol()
+
+win=tk.Tk()
+win.geometry(f"244x410+100+200")
+win['bg']='#C0C0C0'
+win.title('Калькулэйтер')
+
+win.bind('<Key>', press_key)
+
+calc=tk.Entry(win, justify=tk.RIGHT, font=('Arial', 15), width=15)
+calc.insert(0, '0')
+calc['state']=tk.DISABLED
+calc.grid(row=0, column=0, columnspan=4, stick='we', padx=5, pady=10)
+
+make_digit_button('1').grid(row=3, column=0, stick='wens', padx=5, pady=5)
+make_digit_button('2').grid(row=3, column=1, stick='wens', padx=5, pady=5)
+make_digit_button('3').grid(row=3, column=2, stick='wens', padx=5, pady=5)
+make_digit_button('4').grid(row=4, column=0, stick='wens', padx=5, pady=5)
+make_digit_button('5').grid(row=4, column=1, stick='wens', padx=5, pady=5)
+make_digit_button('6').grid(row=4, column=2, stick='wens', padx=5, pady=5)
+make_digit_button('7').grid(row=5, column=0, stick='wens', padx=5, pady=5)
+make_digit_button('8').grid(row=5, column=1, stick='wens', padx=5, pady=5)
+make_digit_button('9').grid(row=5, column=2, stick='wens', padx=5, pady=5)
+make_digit_button('0').grid(row=6, column=1, stick='wens', padx=5, pady=5)
+
+make_operation_button('+').grid(row=2, column=3, stick='wens', padx=5, pady=5)
+make_operation_button('-').grid(row=3, column=3, stick='wens', padx=5, pady=5)
+make_operation_button('/').grid(row=4, column=3, stick='wens', padx=5, pady=5)
+make_operation_button('*').grid(row=5, column=3, stick='wens', padx=5, pady=5)
+
+make_calc_button('=').grid(row=6, column=2, stick='wens', padx=5, pady=5)
+make_clear_button('C').grid(row=2, column=0, stick='wens', padx=5, pady=5)
+
+make_clear_symbol_button('CE').grid(row=2, column=1, stick='wens', padx=5, pady=5)
+make_dot_button('.').grid(row=6, column=0, stick='wens', padx=5, pady=5)
+
+make_sqrt('sqrt').grid(row=2, column=2, stick='wens', padx=5, pady=5)
+make_negative('+\-').grid(row=6, column=3, stick='wens', padx=5, pady=5)
+
+make_save('MS').grid(row=1, column=0, stick='wens', padx=5, pady=5)
+make_read('MR').grid(row=1, column=1, stick='wens', padx=5, pady=5)
+make_sum('M+').grid(row=1, column=2, stick='wens', padx=5, pady=5)
+make_sub('M-').grid(row=1, column=3, stick='wens', padx=5, pady=5)
+
+win.grid_columnconfigure(0,minsize=60)
+win.grid_columnconfigure(1,minsize=60)
+win.grid_columnconfigure(2,minsize=60)
+win.grid_columnconfigure(3,minsize=60)
+
+win.grid_rowconfigure(1,minsize=60)
+win.grid_rowconfigure(2,minsize=60)
+win.grid_rowconfigure(3,minsize=60)
+win.grid_rowconfigure(4,minsize=60)
+win.grid_rowconfigure(5,minsize=60)
+win.grid_rowconfigure(6,minsize=60)
+win.mainloop()
