@@ -1,23 +1,57 @@
 import tkinter as tk
 from tkinter import messagebox
+import re
 import math
 
+flag=False
+storage='0'
+is_calc = False
+
+def check_length(value : str):
+	return len(value) >= 17
+
+def set_is_calc(value : bool):
+	global is_calc
+	is_calc = value
+	print(f"Is calc now {is_calc}")
+
+def get_is_calc():
+	global is_calc
+	print(f"Is calc is {is_calc}")
+	return is_calc
+
 def add_digit(digit):
-	value=calc.get()
-	if value[0]=='0' and len(value)==1:
-		value=value[1:]
 	calc['state']=tk.NORMAL
+	if(get_is_calc()):
+		calc.delete(0, tk.END)
+		calc.insert(0, digit)
+		calc['state']=tk.DISABLED
+		set_is_calc(False)
+		return
+	value=calc.get()
+	set_is_calc(False)
+	if check_length(value):
+		calc['state']=tk.DISABLED
+		return
+	if value[-1]== ')':
+		calc['state']=tk.DISABLED
+		return
+	if value[:3] in ['0', '-0']:
+		value=''
 	calc.delete(0, tk.END)
 	calc.insert(0, value+digit)
 	calc['state']=tk.DISABLED
 
 def add_operation(operation):
 	value=calc.get()
+	if check_length(value):
+		return
 	if value[-1] in '-+/*':
 		value=value[:-1]
-	elif '-' in value or '+' in value or '/' in value or '*' in value:
+	elif re.search(r'[-/\+\*]', value[1:]):
 		calculate()
 		value=calc.get()
+	set_is_calc(False)
 	calc['state']=tk.NORMAL
 	calc.delete(0, tk.END)
 	calc.insert(0, value+operation)
@@ -31,10 +65,17 @@ def calculate():
 		value=value+value[:-1]
 	calc['state']=tk.NORMAL
 	calc.delete(0, tk.END)
+	value = value.replace('√‎', 'math.sqrt')
 	try:
-		#calc.insert(0, eval(value))
-		calc.insert(0, round(eval(value), 6))
-	except (NameError, SyntaxError, ZeroDivisionError):
+		res = round(eval(value), 6)
+		global flag
+		flag = True
+		if round(res % 1, 6) == 0:
+			flag = False
+			res = int(res)
+		calc.insert(0, res)
+		set_is_calc(True)
+	except (NameError, SyntaxError, ZeroDivisionError, ValueError):
 		messagebox.showinfo('Внимание!', 'Ошибка!')
 		calc.insert(0, 0)
 	calc['state']=tk.DISABLED
@@ -62,8 +103,6 @@ def clear_symbol():
 		calc.insert(0, value)
 	calc['state']=tk.DISABLED
 
-flag=False
-
 def dot():
 	value=calc.get()
 	calc['state']=tk.NORMAL
@@ -71,17 +110,14 @@ def dot():
 	if not flag and value[-1].isdigit():
 		calc.delete(0, tk.END)
 		calc.insert(0, value+'.')
+		set_is_calc(False)
 		flag=True
 	calc['state']=tk.DISABLED
 
 def negative():
 	calc['state']=tk.NORMAL
 	value=calc.get()
-	if  '-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]:
-		value=calc.get()
-	elif '-' in value[-1] or '+' in value[-1] or '/' in value[-1] or '*' in value[-1]:
-		value=calc.get()
-	else:					
+	if  not re.search(r'[-/\+\*]', value[1:]):
 		calc.delete(0, tk.END)	
 		if value[0]=='-':
 			calc.insert(0, value[1:])
@@ -90,23 +126,27 @@ def negative():
 	calc['state']=tk.DISABLED
 
 def sqrt_f():
-	calc['state']=tk.NORMAL	
 	value=calc.get()
-	if value[0] != '-':
-		if (not(value[-1] in '-+/*')) and (not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:])):
-			#print('a')
-			value=math.sqrt(float(value))
-			calc.delete(0, tk.END)
-			calc.insert(0, value)
+	if value[-1] in '/*-+':
+		clear_symbol()
+		value=calc.get()
+	calc['state']=tk.NORMAL
+	res = re.search(r'[-]?(\d*\.)?\d+$', value)
+	if(not res):
+		calc['state']=tk.DISABLED
+		return
+	start = res.start()
+	if value[start] == '-':
+		start+=1
+	value = '{}{}{}{}'.format(value[:start], '√‎(', value[start:],')')
+	calc.delete(0, tk.END)
+	calc.insert(0, value)
 	calc['state']=tk.DISABLED
-
-storage=0
 
 def save():
 	calc['state']=tk.NORMAL
 	value=calc.get()
-	if not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]):
-		#value=calc.get()
+	if not re.search(r'[-/\+\*√‎]', value[1:]):
 		global storage
 		storage=value
 	calc['state']=tk.DISABLED
@@ -115,25 +155,30 @@ def read():
 	calc['state']=tk.NORMAL
 	calc.delete(0, tk.END)
 	global storage
+	if('.' in storage):
+		global flag
+		flag = True
 	calc.insert(0, storage)
 	calc['state']=tk.DISABLED
 
 def sum_f():
 	calc['state']=tk.NORMAL	
 	value=calc.get()
-	if not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]):
-		#value=calc.get()
+	if not re.search(r'[-/\+\*√‎]', value[1:]):
 		global storage
-		storage=float(storage)+float(value)
+		storage = float(storage) if '.' in storage else int(storage)
+		value = float(value) if '.' in value else int(value)
+		storage = str(storage + value)
 	calc['state']=tk.DISABLED
 
 def sub_f():
 	calc['state']=tk.NORMAL	
 	value=calc.get()
-	if not('-' in value[1:] or '+' in value[1:] or '/' in value[1:] or '*' in value[1:]):
-		#value=calc.get()
+	if not re.search(r'[-/\+\*√‎]', value[1:]):
 		global storage
-		storage=float(storage)-float(value)
+		storage = float(storage) if '.' in storage else int(storage)
+		value = float(value) if '.' in value else int(value)
+		storage = str(storage + value)
 	calc['state']=tk.DISABLED
 
 def make_digit_button(digit):
@@ -217,7 +262,7 @@ make_clear_button('C').grid(row=2, column=0, stick='wens', padx=5, pady=5)
 make_clear_symbol_button('CE').grid(row=2, column=1, stick='wens', padx=5, pady=5)
 make_dot_button('.').grid(row=6, column=0, stick='wens', padx=5, pady=5)
 
-make_sqrt('sqrt').grid(row=2, column=2, stick='wens', padx=5, pady=5)
+make_sqrt('√‎').grid(row=2, column=2, stick='wens', padx=5, pady=5)
 make_negative('+\-').grid(row=6, column=3, stick='wens', padx=5, pady=5)
 
 make_save('MS').grid(row=1, column=0, stick='wens', padx=5, pady=5)
